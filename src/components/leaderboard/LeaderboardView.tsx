@@ -84,11 +84,11 @@ export function LeaderboardView({ onEnterArena }: LeaderboardViewProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center space-x-2">
-            <Trophy className="w-6 h-6 text-amber-500 fill-amber-500" />
+            <Trophy className="w-6 h-6 text-amber-500" />
             <span>Campus Standings</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5 font-medium">
-            Calibrated rankings &bull; {profiles.length} registered students
+            Live rankings &bull; {profiles.length} registered students
           </p>
         </div>
 

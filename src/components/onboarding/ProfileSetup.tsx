@@ -1,6 +1,7 @@
 import { useState, useRef, type ChangeEvent } from 'react';
 import { motion } from 'framer-motion';
-import { Camera, Sparkles, Loader2, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
+import { Camera, Loader2, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
+import { MirrorIcon } from '../common/MirrorIcon';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { compressImage } from '../../utils/imageCompressor';
@@ -140,9 +141,7 @@ export function ProfileSetup() {
         className="w-full max-w-lg bg-white border border-slate-200/80 rounded-[32px] p-6 sm:p-8 shadow-2xl shadow-slate-200/70"
       >
         <div className="flex items-center space-x-3 mb-6">
-          <div className="w-10 h-10 rounded-2xl bg-[#ff5864]/10 text-[#ff5864] flex items-center justify-center">
-            <Sparkles className="w-5 h-5" />
-          </div>
+          <MirrorIcon className="w-9 h-9" useGradient />
           <div>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Create Profile</h2>
             <p className="text-xs text-slate-400 font-medium">Step 2 of 2 &bull; Put yourself in the showdown</p>

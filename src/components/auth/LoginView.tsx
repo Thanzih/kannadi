@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Flame, ArrowRight, Loader2, ShieldCheck, Trophy } from 'lucide-react';
+import { ArrowRight, Loader2, ShieldCheck, Trophy } from 'lucide-react';
+import { MirrorIcon } from '../common/MirrorIcon';
 import { useAuth } from '../../context/AuthContext';
 
 export function LoginView() {
@@ -30,9 +31,7 @@ export function LoginView() {
       {/* Top Header */}
       <header className="relative z-10 w-full max-w-md mx-auto flex items-center justify-between">
         <div className="flex items-center space-x-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#fd297b] via-[#ff5864] to-[#ff655b] flex items-center justify-center shadow-lg shadow-[#ff5864]/25">
-            <Flame className="w-4 h-4 text-white fill-white" />
-          </div>
+          <MirrorIcon className="w-8 h-8" useGradient />
           <div>
             <span className="font-extrabold text-base tracking-tight text-slate-900">Kannadi</span>
             <span className="text-xs text-slate-400 ml-1 font-medium">കണ്ണാടി</span>
@@ -40,7 +39,7 @@ export function LoginView() {
         </div>
 
         <span className="text-[11px] font-bold text-slate-500 px-3 py-1 rounded-full bg-white border border-slate-200/80 shadow-sm">
-          College Showdown
+          Campus Showcase
         </span>
       </header>
 
@@ -52,17 +51,17 @@ export function LoginView() {
           transition={{ duration: 0.4 }}
           className="space-y-4"
         >
-          {/* Flame Icon */}
-          <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-[#fd297b] via-[#ff5864] to-[#ff655b] flex items-center justify-center text-white shadow-2xl shadow-[#ff5864]/30">
-            <Flame className="w-11 h-11 fill-white" />
+          {/* Mirror Logo */}
+          <div className="mx-auto flex items-center justify-center py-2">
+            <MirrorIcon className="w-20 h-20" useGradient />
           </div>
 
           <div className="space-y-2">
             <h1 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight">
-              Who Holds The Campus Aura?
+              The Campus Mirror
             </h1>
             <p className="text-slate-500 text-sm leading-relaxed max-w-xs mx-auto">
-              Head-to-head peer showdowns. Winner stays, Elo ratings calibrate in real-time.
+              Simple, clean peer matchups. Compare profiles and discover campus favorites.
             </p>
           </div>
         </motion.div>
@@ -115,28 +114,28 @@ export function LoginView() {
         {/* Feature Cards Grid */}
         <div className="grid grid-cols-3 gap-2 pt-4 text-center text-[10px] text-slate-600">
           <div className="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
-            <Flame className="w-4 h-4 mx-auto text-[#ff5864] mb-1 fill-[#ff5864]" />
-            <span className="font-bold block">King Stays</span>
-            <span className="text-slate-400 text-[9px]">Winner stays</span>
+            <MirrorIcon className="w-4 h-4 mx-auto text-[#ff5864] mb-1" />
+            <span className="font-bold block">Matchups</span>
+            <span className="text-slate-400 text-[9px]">Tap to choose</span>
           </div>
 
           <div className="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
             <ShieldCheck className="w-4 h-4 mx-auto text-emerald-500 mb-1" />
-            <span className="font-bold block">No Lurkers</span>
-            <span className="text-slate-400 text-[9px]">All-in pool</span>
+            <span className="font-bold block">Authentic</span>
+            <span className="text-slate-400 text-[9px]">Verified peers</span>
           </div>
 
           <div className="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
             <Trophy className="w-4 h-4 mx-auto text-amber-500 mb-1" />
-            <span className="font-bold block">True Elo</span>
-            <span className="text-slate-400 text-[9px]">Live ratings</span>
+            <span className="font-bold block">Standings</span>
+            <span className="text-slate-400 text-[9px]">Live ranks</span>
           </div>
         </div>
       </main>
 
       {/* Footer */}
       <footer className="relative z-10 text-center text-xs text-slate-400">
-        Kannadi &copy; {new Date().getFullYear()} &bull; College Peer Showdowns
+        Kannadi &copy; {new Date().getFullYear()} &bull; College Peer Showcase
       </footer>
     </div>
   );

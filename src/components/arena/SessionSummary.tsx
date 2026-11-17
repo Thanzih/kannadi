@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Trophy, RotateCcw, ShieldCheck, Sparkles } from 'lucide-react';
+import { Trophy, RotateCcw, ShieldCheck } from 'lucide-react';
+import { MirrorIcon } from '../common/MirrorIcon';
 import { useAuth } from '../../context/AuthContext';
 
 interface SessionSummaryProps {
@@ -32,21 +33,21 @@ export function SessionSummary({ onRestart, onViewLeaderboard, roundsPlayed }: S
       transition={{ duration: 0.35 }}
       className="w-full max-w-md mx-auto bg-white border border-slate-200/80 rounded-[28px] p-6 sm:p-8 shadow-2xl shadow-slate-200/80 text-center space-y-6"
     >
-      {/* Icon Badge */}
-      <div className="mx-auto w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#fd297b] via-[#ff5864] to-[#ff655b] flex items-center justify-center text-white shadow-xl shadow-rose-500/25">
-        <Sparkles className="w-8 h-8" />
+      {/* Logo */}
+      <div className="mx-auto flex items-center justify-center pt-2">
+        <MirrorIcon className="w-16 h-16" useGradient />
       </div>
 
       <div className="space-y-1">
         <div className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold">
           <ShieldCheck className="w-3.5 h-3.5 mr-1 text-emerald-600" />
-          Rounds Calibrated
+          Votes Recorded
         </div>
         <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
           Session Complete!
         </h2>
         <p className="text-slate-500 text-xs">
-          {roundsPlayed} matchups evaluated &bull; Campus Elo ratings updated
+          {roundsPlayed} matchups decided &bull; Campus rankings updated
         </p>
       </div>
 
@@ -60,7 +61,7 @@ export function SessionSummary({ onRestart, onViewLeaderboard, roundsPlayed }: S
           <span className="block text-2xl font-black text-[#ff5864] font-mono">
             {profile?.elo_rating || 1200}
           </span>
-          <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Your Elo</span>
+          <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Your Score</span>
         </div>
       </div>
 

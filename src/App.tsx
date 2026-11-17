@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Flame, Trophy, User as UserIcon, ShieldAlert, Loader2 } from 'lucide-react';
+import { Trophy, User as UserIcon, ShieldAlert, Loader2 } from 'lucide-react';
+import { MirrorIcon } from './components/common/MirrorIcon';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginView } from './components/auth/LoginView';
 import { TermsAgreement } from './components/onboarding/TermsAgreement';
@@ -20,8 +21,8 @@ function AppContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center space-y-4">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#fd297b] via-[#ff5864] to-[#ff655b] flex items-center justify-center shadow-xl shadow-rose-500/25 animate-pulse">
-          <Flame className="w-6 h-6 text-white fill-white" />
+        <div className="animate-pulse flex items-center justify-center">
+          <MirrorIcon className="w-14 h-14" useGradient />
         </div>
         <div className="flex items-center space-x-2 text-xs text-slate-500 font-medium">
           <Loader2 className="w-4 h-4 animate-spin text-[#ff5864]" />
@@ -52,11 +53,9 @@ function AppContent() {
         <div className="max-w-md sm:max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
           <div
             onClick={() => setActiveTab('arena')}
-            className="flex items-center space-x-2 cursor-pointer select-none"
+            className="flex items-center space-x-2.5 cursor-pointer select-none"
           >
-            <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-[#fd297b] via-[#ff5864] to-[#ff655b] flex items-center justify-center shadow-md shadow-rose-500/20">
-              <Flame className="w-4 h-4 text-white fill-white" />
-            </div>
+            <MirrorIcon className="w-7 h-7" useGradient />
             <span className="font-black text-lg tracking-tight bg-gradient-to-r from-[#fd297b] via-[#ff5864] to-[#ff655b] bg-clip-text text-transparent">
               Kannadi
             </span>
@@ -64,7 +63,7 @@ function AppContent() {
 
           <div className="flex items-center space-x-2">
             <span className="px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[11px] font-mono font-bold text-slate-700">
-              {profile.elo_rating} Elo
+              {profile.elo_rating} pts
             </span>
 
             {profile.is_admin && (
@@ -104,15 +103,15 @@ function AppContent() {
       {/* Persistent Floating Bottom Navigation Bar */}
       <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 border-t border-slate-200/80 backdrop-blur-xl safe-area-pb shadow-lg shadow-slate-300/40">
         <div className="max-w-md mx-auto px-6 h-16 flex items-center justify-around">
-          {/* Tab 1: Arena */}
+          {/* Tab 1: Matchups */}
           <button
             onClick={() => setActiveTab('arena')}
             className={`flex flex-col items-center justify-center space-y-1 transition cursor-pointer ${
               activeTab === 'arena' ? 'text-[#ff5864] scale-105' : 'text-slate-400 hover:text-slate-600'
             }`}
           >
-            <Flame className={`w-6 h-6 ${activeTab === 'arena' ? 'fill-[#ff5864]' : ''}`} />
-            <span className="text-[10px] font-extrabold">Arena</span>
+            <MirrorIcon className="w-6 h-6" />
+            <span className="text-[10px] font-extrabold">Matchups</span>
           </button>
 
           {/* Tab 2: Standings */}
@@ -122,7 +121,7 @@ function AppContent() {
               activeTab === 'standings' ? 'text-amber-500 scale-105' : 'text-slate-400 hover:text-slate-600'
             }`}
           >
-            <Trophy className={`w-6 h-6 ${activeTab === 'standings' ? 'fill-amber-500' : ''}`} />
+            <Trophy className="w-6 h-6" />
             <span className="text-[10px] font-extrabold">Standings</span>
           </button>
 

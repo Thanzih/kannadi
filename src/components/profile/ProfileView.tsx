@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { ShieldCheck, LogOut, Trophy, Flame, Zap, Award, ShieldAlert } from 'lucide-react';
+import { ShieldCheck, LogOut, Trophy, Zap, Award, ShieldAlert } from 'lucide-react';
+import { MirrorIcon } from '../common/MirrorIcon';
 import { useAuth } from '../../context/AuthContext';
 
 interface ProfileViewProps {
@@ -89,10 +90,8 @@ export function ProfileView({ onOpenAdmin }: ProfileViewProps) {
           <span className="text-[10px] text-slate-500 uppercase font-bold">Matches</span>
         </div>
 
-        <div className="p-3 rounded-2xl bg-white border border-slate-200 shadow-sm">
-          <div className="w-7 h-7 mx-auto rounded-lg bg-orange-50 text-orange-500 border border-orange-200 flex items-center justify-center mb-1">
-            <Flame className="w-3.5 h-3.5" />
-          </div>
+        <div className="p-3 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col items-center justify-center">
+          <MirrorIcon className="w-7 h-7 mb-1" useGradient />
           <span className="block text-base font-black text-[#ff5864] font-mono">{profile.wins}</span>
           <span className="text-[10px] text-slate-500 uppercase font-bold">Victories</span>
         </div>
