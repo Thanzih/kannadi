@@ -1,8 +1,7 @@
 import { useState, useMemo } from 'react';
-import { Search, Edit3, Trash2, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
+import { Search, Trash2, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Profile } from '../../types';
-import { AdjustEloModal } from './AdjustEloModal';
 import { ConfirmPurgeModal } from './ConfirmPurgeModal';
 import { PhotoInspectModal } from './PhotoInspectModal';
 
@@ -17,7 +16,6 @@ export function UserModerationTable({ profiles, onRefresh }: UserModerationTable
 
   // Modals state
   const [inspectTarget, setInspectTarget] = useState<Profile | null>(null);
-  const [adjustTarget, setAdjustTarget] = useState<Profile | null>(null);
   const [purgeTarget, setPurgeTarget] = useState<Profile | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
@@ -75,7 +73,7 @@ export function UserModerationTable({ profiles, onRefresh }: UserModerationTable
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name or college ID..."
+            placeholder="Search by name or admission no...."
             className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:border-[#ff5864] outline-none shadow-sm transition"
           />
         </div>
@@ -102,8 +100,8 @@ export function UserModerationTable({ profiles, onRefresh }: UserModerationTable
             <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
               <tr>
                 <th className="py-3.5 px-4">Student</th>
-                <th className="py-3.5 px-4">Dept & Gender</th>
-                <th className="py-3.5 px-4 text-center">Elo Rating</th>
+                <th className="py-3.5 px-4">Department</th>
+                <th className="py-3.5 px-4 text-center">Score</th>
                 <th className="py-3.5 px-4 text-center">Record</th>
                 <th className="py-3.5 px-4 text-center">Status</th>
                 <th className="py-3.5 px-4 text-right">Moderation</th>
@@ -143,13 +141,12 @@ export function UserModerationTable({ profiles, onRefresh }: UserModerationTable
                       </div>
                     </td>
 
-                    {/* Department & Gender */}
+                    {/* Department */}
                     <td className="py-3 px-4">
                       <span className="block text-slate-700 font-medium">{p.department || '—'}</span>
-                      <span className="text-[11px] text-slate-400 capitalize">{p.gender || 'unspecified'}</span>
                     </td>
 
-                    {/* Elo Rating */}
+                    {/* Score */}
                     <td className="py-3 px-4 text-center font-mono font-bold text-slate-900">
                       <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200">
                         {p.elo_rating}
@@ -189,14 +186,6 @@ export function UserModerationTable({ profiles, onRefresh }: UserModerationTable
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end space-x-2">
                         <button
-                          onClick={() => setAdjustTarget(p)}
-                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition cursor-pointer"
-                          title="Calibrate Elo Rating"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-
-                        <button
                           onClick={() => handleToggleOptIn(p)}
                           className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition cursor-pointer"
                           title={p.is_opted_in ? 'Hide from matchmaking' : 'Show in matchmaking'}
@@ -226,13 +215,6 @@ export function UserModerationTable({ profiles, onRefresh }: UserModerationTable
         target={inspectTarget}
         isOpen={Boolean(inspectTarget)}
         onClose={() => setInspectTarget(null)}
-      />
-
-      <AdjustEloModal
-        target={adjustTarget}
-        isOpen={Boolean(adjustTarget)}
-        onClose={() => setAdjustTarget(null)}
-        onSuccess={onRefresh}
       />
 
       <ConfirmPurgeModal

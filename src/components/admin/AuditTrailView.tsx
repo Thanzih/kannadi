@@ -74,7 +74,6 @@ export function AuditTrailView() {
               });
 
               const isDelete = log.action === 'DELETE_PROFILE';
-              const isAdjust = log.action === 'ADJUST_ELO';
 
               return (
                 <div key={log.id} className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs hover:bg-slate-50/80 transition-colors">
@@ -83,8 +82,6 @@ export function AuditTrailView() {
                       className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
                         isDelete
                           ? 'bg-rose-50 text-rose-600 border border-rose-200'
-                          : isAdjust
-                          ? 'bg-amber-50 text-amber-600 border border-amber-200'
                           : 'bg-indigo-50 text-indigo-600 border border-indigo-200'
                       }`}
                     >
@@ -97,8 +94,6 @@ export function AuditTrailView() {
                           className={`font-mono font-bold text-[10px] uppercase px-2 py-0.5 rounded ${
                             isDelete
                               ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                              : isAdjust
-                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
                               : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                           }`}
                         >
@@ -115,11 +110,6 @@ export function AuditTrailView() {
                           <span className="italic text-slate-500 font-sans">
                             {String(log.details.reason || 'No reason provided')}
                           </span>
-                          {Boolean(isAdjust && log.details.new_elo) && (
-                            <span className="ml-2 font-mono font-bold text-amber-600">
-                              (New Elo: {String(log.details.new_elo)})
-                            </span>
-                          )}
                         </p>
                       )}
                     </div>

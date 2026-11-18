@@ -8,7 +8,7 @@ export function TermsAgreement() {
   const [hasAgreed, setHasAgreed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col justify-center items-center px-4 py-12 font-sans">
+    <div className="min-h-svh bg-[#f8fafc] text-slate-900 flex flex-col justify-center items-center px-4 py-12 font-sans">
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -45,7 +45,7 @@ export function TermsAgreement() {
               Mutual Stake (Zero Lurkers)
             </div>
             <p className="text-slate-500 pl-7 text-[12px]">
-              You can only vote if you upload an authentic photo of yourself and your College ID. Everyone voting is equally vulnerable in the pool.
+              You can only vote if you upload an authentic photo of yourself and your Admission No. Everyone voting is equally vulnerable in the pool.
             </p>
           </div>
 

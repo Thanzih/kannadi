@@ -22,7 +22,7 @@ export function LoginView() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col justify-between px-4 py-8 relative overflow-hidden font-sans">
+    <div className="min-h-svh bg-[#f8fafc] text-slate-900 flex flex-col justify-between px-4 py-8 relative overflow-hidden font-sans">
       {/* Background ambient lighting */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gradient-to-b from-[#ff5864]/10 via-[#fd297b]/5 to-transparent rounded-full blur-3xl" />

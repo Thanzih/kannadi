@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import type { Profile } from '../types';
@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [termsAcceptedSession, setTermsAcceptedSession] = useState<boolean>(false);
 
   // Fetch user profile from public.profiles
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Exception fetching profile:', err);
       setProfile(null);
     }
-  };
+  }, []);
 
   useEffect(() => {
     // 1. Initial session check
@@ -101,11 +101,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (user) {
       await fetchProfile(user.id);
     }
-  };
+  }, [user, fetchProfile]);
 
   return (
     <AuthContext.Provider

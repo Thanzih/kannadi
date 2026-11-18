@@ -2,40 +2,44 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { MatchupCandidate } from '../types';
 
-export function useMatchup(requestedRounds = 15) {
+export function useMatchup(defaultRounds = 15) {
   const [currentRound, setCurrentRound] = useState<number>(1);
-  const [maxRounds, setMaxRounds] = useState<number>(requestedRounds);
-  const [king, setKing] = useState<MatchupCandidate | null>(null);
-  const [challenger, setChallenger] = useState<MatchupCandidate | null>(null);
-  const [nextChallenger, setNextChallenger] = useState<MatchupCandidate | null>(null);
-  const [kingStreak, setKingStreak] = useState<number>(1);
-  const [sessionVotedIds, setSessionVotedIds] = useState<string[]>([]);
+  const [maxRounds, setMaxRounds] = useState<number>(defaultRounds);
+  const [candidateA, setCandidateA] = useState<MatchupCandidate | null>(null);
+  const [candidateB, setCandidateB] = useState<MatchupCandidate | null>(null);
+  const [nextCandidate, setNextCandidate] = useState<MatchupCandidate | null>(null);
+  const [swappedSlot, setSwappedSlot] = useState<'A' | 'B' | null>(null);
+  const [lastWinnerSlot, setLastWinnerSlot] = useState<'A' | 'B' | null>(null);
+  const [sessionShownIds, setSessionShownIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isVoting, setIsVoting] = useState<boolean>(false);
   const [isComplete, setIsComplete] = useState<boolean>(false);
   const [insufficientParticipants, setInsufficientParticipants] = useState<boolean>(false);
 
-  // Keep a ref of sessionVotedIds to avoid stale closures in callbacks
-  const votedIdsRef = useRef<string[]>([]);
-  votedIdsRef.current = sessionVotedIds;
+  // Ref to track shown IDs without stale closure issues
+  const shownIdsRef = useRef<string[]>([]);
+  shownIdsRef.current = sessionShownIds;
 
-  // Helper to preload image into browser cache
+  // Preload image helper
   const preloadImage = (url: string) => {
     if (!url) return;
     const img = new Image();
     img.src = url;
   };
 
-  // Helper to fetch single candidate from RPC
-  const fetchCandidate = async (kingId: string, excludedIds: string[]): Promise<MatchupCandidate | null> => {
+  // Fetch unique candidate that has NEVER appeared in this session
+  const fetchUniqueCandidate = async (
+    activeOpponentId: string,
+    excludedIds: string[]
+  ): Promise<MatchupCandidate | null> => {
     try {
       const { data, error } = await supabase.rpc('get_next_challenger', {
-        p_king_id: kingId || '00000000-0000-0000-0000-000000000000',
+        p_king_id: activeOpponentId || '00000000-0000-0000-0000-000000000000',
         p_excluded_ids: excludedIds,
       });
 
       if (error) {
-        console.error('Error fetching next challenger:', error.message);
+        console.error('Error fetching candidate:', error.message);
         return null;
       }
 
@@ -43,17 +47,7 @@ export function useMatchup(requestedRounds = 15) {
         return data[0] as MatchupCandidate;
       }
 
-      // If pool exhausted with excludedIds, fallback to allowing repeated candidates (excluding current king and voter)
-      if (excludedIds.length > 0) {
-        const { data: fallbackData } = await supabase.rpc('get_next_challenger', {
-          p_king_id: kingId,
-          p_excluded_ids: [],
-        });
-        if (Array.isArray(fallbackData) && fallbackData.length > 0) {
-          return fallbackData[0] as MatchupCandidate;
-        }
-      }
-
+      // No more unique candidates available; strict uniqueness enforced
       return null;
     } catch (err) {
       console.error('Exception fetching candidate:', err);
@@ -61,17 +55,30 @@ export function useMatchup(requestedRounds = 15) {
     }
   };
 
-  // Initialize Matchup Arena
+  // Initialize Matchup Session
   const initMatchup = useCallback(async () => {
     setIsLoading(true);
     setInsufficientParticipants(false);
     setIsComplete(false);
     setCurrentRound(1);
-    setKingStreak(1);
-    setSessionVotedIds([]);
+    setSwappedSlot(null);
+    setLastWinnerSlot(null);
+    setSessionShownIds([]);
 
-    // 0. Check total candidate pool size to adapt session length
     try {
+      // 1. Fetch rounds_per_session setting from app_settings (if present)
+      let sessionTargetRounds = defaultRounds;
+      const { data: settingsData } = await supabase
+        .from('app_settings')
+        .select('*')
+        .eq('key', 'rounds_per_session')
+        .maybeSingle();
+
+      if (settingsData && typeof settingsData.value === 'number') {
+        sessionTargetRounds = settingsData.value;
+      }
+
+      // 2. Check total candidate pool size
       const { count } = await supabase
         .from('profiles')
         .select('id', { count: 'exact', head: true })
@@ -84,116 +91,139 @@ export function useMatchup(requestedRounds = 15) {
         return;
       }
 
-      // Adaptive rounds: never exceed unique candidates available minus the active king
-      const adaptiveMax = Math.max(3, Math.min(requestedRounds, poolSize - 1));
-      setMaxRounds(adaptiveMax);
-    } catch (err) {
-      console.error('Error fetching pool size:', err);
-    }
+      // Clamp limit: if fewer members than configured rounds, use member count
+      const effectiveMax = Math.min(sessionTargetRounds, poolSize);
+      setMaxRounds(effectiveMax);
 
-    const zeroUuid = '00000000-0000-0000-0000-000000000000';
+      const zeroUuid = '00000000-0000-0000-0000-000000000000';
 
-    // 1. Fetch initial King
-    const firstKing = await fetchCandidate(zeroUuid, []);
-    if (!firstKing) {
-      setInsufficientParticipants(true);
-      setIsLoading(false);
-      return;
-    }
-
-    // 2. Fetch initial Challenger
-    const firstChallenger = await fetchCandidate(firstKing.id, [firstKing.id]);
-    if (!firstChallenger) {
-      setInsufficientParticipants(true);
-      setIsLoading(false);
-      return;
-    }
-
-    setKing(firstKing);
-    setChallenger(firstChallenger);
-    preloadImage(firstKing.photo_url);
-    preloadImage(firstChallenger.photo_url);
-
-    // 3. Pre-fetch third candidate in background
-    const initialExcluded = [firstKing.id, firstChallenger.id];
-    setSessionVotedIds(initialExcluded);
-
-    fetchCandidate(firstKing.id, initialExcluded).then((third) => {
-      if (third) {
-        setNextChallenger(third);
-        preloadImage(third.photo_url);
+      // 3. Fetch initial Candidate A
+      const firstA = await fetchUniqueCandidate(zeroUuid, []);
+      if (!firstA) {
+        setInsufficientParticipants(true);
+        setIsLoading(false);
+        return;
       }
-    });
 
-    setIsLoading(false);
-  }, []);
+      // 4. Fetch initial Candidate B (excluding candidate A)
+      const firstB = await fetchUniqueCandidate(firstA.id, [firstA.id]);
+      if (!firstB) {
+        setInsufficientParticipants(true);
+        setIsLoading(false);
+        return;
+      }
+
+      setCandidateA(firstA);
+      setCandidateB(firstB);
+      preloadImage(firstA.photo_url);
+      preloadImage(firstB.photo_url);
+
+      const initialShown = [firstA.id, firstB.id];
+      setSessionShownIds(initialShown);
+
+      // 5. Pre-fetch subsequent unique candidate in the background
+      fetchUniqueCandidate(firstA.id, initialShown).then((upcoming) => {
+        if (upcoming) {
+          setNextCandidate(upcoming);
+          preloadImage(upcoming.photo_url);
+        } else {
+          setNextCandidate(null);
+        }
+      });
+    } catch (err) {
+      console.error('Error during initMatchup:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [defaultRounds]);
 
   useEffect(() => {
     initMatchup();
   }, [initMatchup]);
 
-  // Vote Handler: 'king' or 'challenger'
-  const handleVote = async (choice: 'king' | 'challenger') => {
-    if (!king || !challenger || isVoting || isComplete) return;
+  // Vote Handler: 'A' or 'B'
+  const handleVote = async (chosenSlot: 'A' | 'B') => {
+    if (!candidateA || !candidateB || isVoting || isComplete) return;
 
     setIsVoting(true);
 
-    const winner = choice === 'king' ? king : challenger;
-    const loser = choice === 'king' ? challenger : king;
+    const winner = chosenSlot === 'A' ? candidateA : candidateB;
+    const loser = chosenSlot === 'A' ? candidateB : candidateA;
 
     // Fire RPC vote asynchronously (non-blocking)
-    supabase.rpc('submit_matchup_vote', {
-      p_winner_id: winner.id,
-      p_loser_id: loser.id,
-    }).then(({ error }) => {
-      if (error) {
-        console.error('submit_matchup_vote error:', error.message);
-      }
-    });
+    supabase
+      .rpc('submit_matchup_vote', {
+        p_winner_id: winner.id,
+        p_loser_id: loser.id,
+      })
+      .then(({ error }) => {
+        if (error) {
+          console.error('submit_matchup_vote error:', error.message);
+        }
+      });
 
-    // Check if session rounds complete
+    // Check if session rounds reached max
     if (currentRound >= maxRounds) {
       setIsComplete(true);
       setIsVoting(false);
       return;
     }
 
-    // Update streak: increments if king stays, resets to 1 if challenger unseats king
-    const newStreak = choice === 'king' ? kingStreak + 1 : 1;
-    const newKing = winner;
+    // Track winner slot for celebratory micro-feedback on stationary card
+    setLastWinnerSlot(chosenSlot);
 
-    // Determine next challenger
-    let incomingChallenger = nextChallenger;
-    const updatedExcluded = [...votedIdsRef.current, loser.id];
-    setSessionVotedIds(updatedExcluded);
+    // Determine the slot to swap:
+    // If user chose 'A', Candidate A stays in place; Slot B is swapped.
+    // If user chose 'B', Candidate B stays in place; Slot A is swapped.
+    const slotToSwap = chosenSlot === 'A' ? 'B' : 'A';
+    setSwappedSlot(slotToSwap);
 
-    // If pre-fetched candidate wasn't ready or matches the new King, fetch immediately
-    if (!incomingChallenger || incomingChallenger.id === newKing.id) {
-      incomingChallenger = await fetchCandidate(newKing.id, updatedExcluded);
+    // Get the next candidate to replace the losing slot
+    let incoming = nextCandidate;
+    const allShownSoFar = shownIdsRef.current;
+
+    // If pre-fetched candidate was not ready or already shown, fetch fresh
+    if (!incoming || allShownSoFar.includes(incoming.id)) {
+      incoming = await fetchUniqueCandidate(winner.id, allShownSoFar);
     }
 
-    if (incomingChallenger) {
-      preloadImage(incomingChallenger.photo_url);
+    // If no more unique candidate can be found, gracefully complete session
+    if (!incoming) {
+      setIsComplete(true);
+      setIsVoting(false);
+      return;
     }
 
-    // State transitions
-    setKing(newKing);
-    setKingStreak(newStreak);
-    setChallenger(incomingChallenger);
+    preloadImage(incoming.photo_url);
+
+    // Update session shown list
+    const updatedShown = [...allShownSoFar, incoming.id];
+    setSessionShownIds(updatedShown);
+
+    // Keep the chosen candidate in their slot, swap only the other slot!
+    if (slotToSwap === 'B') {
+      setCandidateB(incoming);
+    } else {
+      setCandidateA(incoming);
+    }
+
     setCurrentRound((prev) => prev + 1);
-    setIsVoting(false);
 
-    // Prepare pipeline: pre-fetch the next candidate for the subsequent round
-    if (incomingChallenger) {
-      fetchCandidate(newKing.id, [...updatedExcluded, incomingChallenger.id]).then((future) => {
-        if (future) {
-          setNextChallenger(future);
-          preloadImage(future.photo_url);
-        } else {
-          setNextChallenger(null);
-        }
-      });
-    }
+    // Smooth debounce on voting lock to prevent animation collision on rapid taps
+    setTimeout(() => {
+      setIsVoting(false);
+      setLastWinnerSlot(null);
+    }, 380);
+
+    // Pipeline next candidate in the background
+    fetchUniqueCandidate(winner.id, updatedShown).then((future) => {
+      if (future) {
+        setNextCandidate(future);
+        preloadImage(future.photo_url);
+      } else {
+        setNextCandidate(null);
+      }
+    });
   };
 
   const resetSession = () => {
@@ -203,9 +233,10 @@ export function useMatchup(requestedRounds = 15) {
   return {
     currentRound,
     maxRounds,
-    king,
-    challenger,
-    kingStreak,
+    candidateA,
+    candidateB,
+    swappedSlot,
+    lastWinnerSlot,
     isLoading,
     isVoting,
     isComplete,

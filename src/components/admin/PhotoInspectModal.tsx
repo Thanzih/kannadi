@@ -35,7 +35,7 @@ export function PhotoInspectModal({ target, isOpen, onClose }: PhotoInspectModal
           </div>
 
           {/* Photo */}
-          <div className="w-full aspect-[3/4] max-h-[60vh] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
+          <div className="w-full aspect-square max-h-[60vh] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
             <img
               src={target.photo_url}
               alt={target.name}
@@ -44,7 +44,7 @@ export function PhotoInspectModal({ target, isOpen, onClose }: PhotoInspectModal
           </div>
 
           <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
-            <span>Rating: <strong className="text-slate-900 font-mono">{target.elo_rating} Elo</strong></span>
+            <span>Score: <strong className="text-slate-900 font-mono">{target.elo_rating} pts</strong></span>
             <a
               href={target.photo_url}
               target="_blank"

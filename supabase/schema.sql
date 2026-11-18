@@ -127,11 +127,39 @@ create policy "Allow insert vote"
   to authenticated
   with check (auth.uid() = voter_id);
 
--- Admins can view all votes; regular voters can view their own vote history
+-- Admins and regular users can ONLY view their own vote history (admin cannot see individual votes)
 create policy "Allow select votes"
   on public.votes for select
   to authenticated
-  using (public.is_admin() or auth.uid() = voter_id);
+  using (auth.uid() = voter_id);
+
+-- APP SETTINGS TABLE & POLICIES
+create table if not exists public.app_settings (
+  key text primary key,
+  value jsonb not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.app_settings enable row level security;
+drop policy if exists "Allow read app_settings" on public.app_settings;
+drop policy if exists "Allow admin write app_settings" on public.app_settings;
+
+create policy "Allow read app_settings"
+  on public.app_settings for select
+  to authenticated
+  using (true);
+
+create policy "Allow admin write app_settings"
+  on public.app_settings for all
+  to authenticated
+  using (public.is_admin());
+
+-- Default Settings
+insert into public.app_settings (key, value)
+values
+  ('leaderboard_top_count', '20'::jsonb),
+  ('rounds_per_session', '15'::jsonb)
+on conflict (key) do nothing;
 
 -- ADMIN LOGS POLICIES
 drop policy if exists "Allow admin logs access" on public.admin_logs;
@@ -260,30 +288,7 @@ begin
 end;
 $$;
 
--- Admin Procedure: Manual Elo adjustment with audit logging
-create or replace function public.admin_adjust_elo(
-  p_target_id uuid,
-  p_new_elo int,
-  p_reason text
-)
-returns void
-language plpgsql
-security definer
-as $$
-begin
-  if not public.is_admin() then
-    raise exception 'Unauthorized: Admin privileges required';
-  end if;
-
-  insert into public.admin_logs (admin_id, action, target_user_id, details)
-  values (auth.uid(), 'ADJUST_ELO', p_target_id, jsonb_build_object('new_elo', p_new_elo, 'reason', p_reason));
-
-  update public.profiles
-  set elo_rating = p_new_elo,
-      updated_at = timezone('utc'::text, now())
-  where id = p_target_id;
-end;
-$$;
+-- Note: admin_adjust_elo has been intentionally removed; scores cannot be modified by admins.
 
 -- 6. STORAGE BUCKET POLICIES (for 'avatars' bucket)
 -- Ensure the 'avatars' bucket exists and is public

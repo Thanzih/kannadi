@@ -20,7 +20,7 @@ function AppContent() {
   // 1. Initial Authentication & Profile Loading
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center space-y-4">
+      <div className="min-h-svh h-svh bg-slate-50 flex flex-col items-center justify-center space-y-4">
         <div className="animate-pulse flex items-center justify-center">
           <MirrorIcon className="w-14 h-14" useGradient />
         </div>
@@ -47,9 +47,9 @@ function AppContent() {
 
   // 4. Authenticated & Profile Active -> Main App Shell with Bottom Navigation
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-[#ff5864] selection:text-white">
+    <div className="min-h-svh h-svh bg-slate-50 text-slate-900 flex flex-col overflow-hidden selection:bg-[#ff5864] selection:text-white">
       {/* Top Brand Header */}
-      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-md shadow-xs">
+      <header className="sticky top-0 z-30 shrink-0 border-b border-slate-200/80 bg-white/90 backdrop-blur-md shadow-xs">
         <div className="max-w-md sm:max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
           <div
             onClick={() => setActiveTab('arena')}
@@ -76,7 +76,7 @@ function AppContent() {
       </header>
 
       {/* Main Viewport Content Area */}
-      <main className="flex-1 flex flex-col w-full">
+      <main className={`flex-1 min-h-0 flex flex-col w-full ${activeTab === 'arena' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
         {activeTab === 'arena' && (
           <ArenaView
             onViewLeaderboard={() => setActiveTab('standings')}
@@ -100,8 +100,8 @@ function AppContent() {
         )}
       </main>
 
-      {/* Persistent Floating Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 border-t border-slate-200/80 backdrop-blur-xl safe-area-pb shadow-lg shadow-slate-300/40">
+      {/* Persistent Bottom Navigation Bar */}
+      <nav className="shrink-0 z-40 bg-white/95 border-t border-slate-200/80 backdrop-blur-xl safe-area-pb shadow-lg shadow-slate-300/40">
         <div className="max-w-md mx-auto px-6 h-16 flex items-center justify-around">
           {/* Tab 1: Matchups */}
           <button

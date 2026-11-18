@@ -1,11 +1,11 @@
 import { useState, useRef, type ChangeEvent } from 'react';
 import { motion } from 'framer-motion';
-import { Camera, Loader2, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
+import { Camera, Loader2, CheckCircle2, AlertCircle, ArrowRight, Crop } from 'lucide-react';
 import { MirrorIcon } from '../common/MirrorIcon';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { compressImage } from '../../utils/imageCompressor';
-import type { Gender } from '../../types';
+import { ImageCropModal } from './ImageCropModal';
 
 export function ProfileSetup() {
   const { user, refreshProfile, signOut } = useAuth();
@@ -13,11 +13,12 @@ export function ProfileSetup() {
   const [name, setName] = useState<string>(
     user?.user_metadata?.full_name || user?.user_metadata?.name || ''
   );
-  const [collegeId, setCollegeId] = useState<string>('');
-  const [gender, setGender] = useState<Gender | ''>('');
+  const [admissionNo, setAdmissionNo] = useState<string>('');
   const [department, setDepartment] = useState<string>('');
 
-  // Image State
+  // Image & Cropping State
+  const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
+  const [isCropModalOpen, setIsCropModalOpen] = useState<boolean>(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [compressedBlob, setCompressedBlob] = useState<Blob | null>(null);
   const [compressionStats, setCompressionStats] = useState<{ originalSize: number; compressedSize: number } | null>(null);
@@ -29,7 +30,7 @@ export function ProfileSetup() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = async (e: ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -38,21 +39,36 @@ export function ProfileSetup() {
       return;
     }
 
+    setErrorMsg(null);
+    const objectUrl = URL.createObjectURL(file);
+    setRawImageSrc(objectUrl);
+    setIsCropModalOpen(true);
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob, croppedPreviewUrl: string) => {
     setIsProcessingImage(true);
     setErrorMsg(null);
 
     try {
-      const result = await compressImage(file, { maxWidth: 1000, maxHeight: 1000, quality: 0.85 });
+      // Compress the cropped image to target maximum resolution & quality
+      const croppedFile = new File([croppedBlob], 'avatar.jpg', { type: 'image/jpeg' });
+      const result = await compressImage(croppedFile, { maxWidth: 900, maxHeight: 1200, quality: 0.88 });
+
       setCompressedBlob(result.blob);
-      setPreviewUrl(result.previewUrl);
+      setPreviewUrl(result.previewUrl || croppedPreviewUrl);
       setCompressionStats({
-        originalSize: result.originalSize,
+        originalSize: croppedBlob.size,
         compressedSize: result.compressedSize,
       });
     } catch (err: unknown) {
       console.error('Image compression error:', err);
-      setErrorMsg('Failed to process image. Please try a different photo.');
-      setPreviewUrl(null);
+      // Fallback to the cropped blob if compressor throws
+      setCompressedBlob(croppedBlob);
+      setPreviewUrl(croppedPreviewUrl);
+      setCompressionStats({
+        originalSize: croppedBlob.size,
+        compressedSize: croppedBlob.size,
+      });
     } finally {
       setIsProcessingImage(false);
     }
@@ -67,13 +83,13 @@ export function ProfileSetup() {
       return;
     }
 
-    if (!collegeId.trim()) {
-      setErrorMsg('Please enter your unique College ID (e.g. MEC22CS045)');
+    if (!admissionNo.trim()) {
+      setErrorMsg('Please enter your unique Admission No. (e.g. MEC22CS045)');
       return;
     }
 
     if (!compressedBlob) {
-      setErrorMsg('Please upload a good photo of yourself');
+      setErrorMsg('Please upload and crop a photo of yourself');
       return;
     }
 
@@ -104,9 +120,8 @@ export function ProfileSetup() {
       const { error: insertError } = await supabase.from('profiles').insert({
         id: user.id,
         name: name.trim(),
-        college_id: collegeId.trim().toUpperCase(),
+        college_id: admissionNo.trim().toUpperCase(),
         photo_url: photoUrl,
-        gender: gender || null,
         department: department.trim() || null,
         elo_rating: 1200,
         matches_played: 0,
@@ -117,7 +132,7 @@ export function ProfileSetup() {
 
       if (insertError) {
         if (insertError.code === '23505' || insertError.message.includes('unique')) {
-          throw new Error('This College ID is already registered to another account.');
+          throw new Error('This Admission No. is already registered to another account.');
         }
         throw new Error(`Profile creation failed: ${insertError.message}`);
       }
@@ -133,7 +148,7 @@ export function ProfileSetup() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col justify-center items-center px-4 py-12 font-sans">
+    <div className="min-h-svh bg-[#f8fafc] text-slate-900 flex flex-col justify-center items-center px-4 py-12 font-sans">
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -159,7 +174,7 @@ export function ProfileSetup() {
           {/* Photo Upload Zone */}
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-              Profile Photo <span className="text-[#ff5864]">*</span>
+              Profile Photo <span className="text-[#ff5864]">* (Square 1:1)</span>
             </label>
 
             <input
@@ -171,36 +186,64 @@ export function ProfileSetup() {
             />
 
             <div
-              onClick={() => fileInputRef.current?.click()}
-              className={`relative border-2 border-dashed rounded-2xl p-4 transition-all flex flex-col items-center justify-center cursor-pointer select-none overflow-hidden ${
+              className={`relative border-2 border-dashed rounded-2xl p-4 transition-all flex flex-col items-center justify-center select-none overflow-hidden ${
                 previewUrl
-                  ? 'border-[#ff5864]/50 bg-slate-50 hover:border-[#ff5864]'
-                  : 'border-slate-300 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-50'
+                  ? 'border-[#ff5864]/50 bg-slate-50'
+                  : 'border-slate-300 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-50 cursor-pointer'
               }`}
+              onClick={() => {
+                if (!previewUrl) fileInputRef.current?.click();
+              }}
             >
               {isProcessingImage ? (
                 <div className="py-8 flex flex-col items-center space-y-2">
                   <Loader2 className="w-7 h-7 text-[#ff5864] animate-spin" />
-                  <span className="text-xs text-slate-500 font-medium">Optimizing photo...</span>
+                  <span className="text-xs text-slate-500 font-medium">Processing cropped photo...</span>
                 </div>
               ) : previewUrl ? (
                 <div className="flex flex-col items-center space-y-3 w-full">
-                  <div className="relative w-36 h-44 rounded-2xl overflow-hidden border-2 border-[#ff5864]/40 shadow-lg">
+                  {/* Fixed 1:1 square preview */}
+                  <div className="relative w-36 aspect-square rounded-2xl overflow-hidden border-2 border-[#ff5864]/40 shadow-lg group">
                     <img
                       src={previewUrl}
                       alt="Uploaded preview"
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
-                      Change Photo
+                    <div
+                      onClick={() => rawImageSrc && setIsCropModalOpen(true)}
+                      className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-xs font-bold cursor-pointer space-y-1"
+                    >
+                      <Crop className="w-5 h-5" />
+                      <span>Adjust Crop</span>
                     </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    {rawImageSrc && (
+                      <button
+                        type="button"
+                        onClick={() => setIsCropModalOpen(true)}
+                        className="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer flex items-center space-x-1"
+                      >
+                        <Crop className="w-3 h-3 text-[#ff5864]" />
+                        <span>Adjust Crop</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer"
+                    >
+                      Change Photo
+                    </button>
                   </div>
 
                   {compressionStats && (
                     <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 text-[11px] font-bold">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>
-                        Optimized: {(compressionStats.compressedSize / 1024).toFixed(0)} KB
+                        Optimized: {(compressionStats.compressedSize / 1024).toFixed(0)} KB (Square Aspect)
                       </span>
                     </div>
                   )}
@@ -212,7 +255,7 @@ export function ProfileSetup() {
                   </div>
                   <div>
                     <span className="text-xs font-bold text-slate-800">Upload your best picture</span>
-                    <p className="text-[11px] text-slate-400 mt-0.5">JPEG, PNG or WEBP (auto-compressed)</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">JPEG, PNG or WEBP (with square crop guide)</p>
                   </div>
                 </div>
               )}
@@ -234,51 +277,33 @@ export function ProfileSetup() {
             />
           </div>
 
-          {/* College ID */}
+          {/* Admission No. */}
           <div className="space-y-1">
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-              College ID <span className="text-[#ff5864]">*</span>
+              Admission No. <span className="text-[#ff5864]">*</span>
             </label>
             <input
               type="text"
               required
-              value={collegeId}
-              onChange={(e) => setCollegeId(e.target.value.toUpperCase())}
+              value={admissionNo}
+              onChange={(e) => setAdmissionNo(e.target.value.toUpperCase())}
               placeholder="e.g. MEC22CS045"
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 focus:bg-white focus:border-[#ff5864] text-sm font-mono text-slate-900 uppercase outline-none transition font-bold"
             />
           </div>
 
-          {/* Department & Gender Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Department
-              </label>
-              <input
-                type="text"
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                placeholder="e.g. Computer Science"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 focus:bg-white focus:border-[#ff5864] text-sm text-slate-900 outline-none transition font-medium"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Gender (Optional)
-              </label>
-              <select
-                value={gender}
-                onChange={(e) => setGender(e.target.value as Gender | '')}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 focus:bg-white focus:border-[#ff5864] text-sm text-slate-900 outline-none transition cursor-pointer font-medium"
-              >
-                <option value="">Prefer not to say</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
+          {/* Department (Full Width) */}
+          <div className="space-y-1">
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+              Department
+            </label>
+            <input
+              type="text"
+              value={department}
+              onChange={(e) => setDepartment(e.target.value)}
+              placeholder="e.g. Computer Science"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 focus:bg-white focus:border-[#ff5864] text-sm text-slate-900 outline-none transition font-medium"
+            />
           </div>
 
           {/* Submit Button */}
@@ -313,6 +338,14 @@ export function ProfileSetup() {
           </button>
         </div>
       </motion.div>
+
+      {/* Image Crop Modal */}
+      <ImageCropModal
+        imageSrc={rawImageSrc}
+        isOpen={isCropModalOpen}
+        onClose={() => setIsCropModalOpen(false)}
+        onCropComplete={handleCropComplete}
+      />
     </div>
   );
 }

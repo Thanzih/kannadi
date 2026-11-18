@@ -13,12 +13,25 @@ interface LeaderboardViewProps {
 export function LeaderboardView({ onEnterArena }: LeaderboardViewProps) {
   const { profile: currentProfile } = useAuth();
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [topCountLimit, setTopCountLimit] = useState<number>(20);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedDept, setSelectedDept] = useState<string>('All');
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   const fetchLeaderboard = useCallback(async () => {
     try {
+      // 1. Fetch settings for top count limit
+      const { data: settingsData } = await supabase
+        .from('app_settings')
+        .select('*')
+        .eq('key', 'leaderboard_top_count')
+        .maybeSingle();
+
+      if (settingsData && typeof settingsData.value === 'number') {
+        setTopCountLimit(settingsData.value);
+      }
+
+      // 2. Fetch profiles
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -75,8 +88,12 @@ export function LeaderboardView({ onEnterArena }: LeaderboardViewProps) {
     return { rank, total, percentile };
   }, [profiles, currentProfile]);
 
-  const podiumProfiles = useMemo(() => filteredProfiles.slice(0, 3), [filteredProfiles]);
-  const gridProfiles = useMemo(() => filteredProfiles.slice(3, 20), [filteredProfiles]);
+  const podiumCount = Math.min(topCountLimit, 3);
+  const podiumProfiles = useMemo(() => filteredProfiles.slice(0, podiumCount), [filteredProfiles, podiumCount]);
+  const gridProfiles = useMemo(
+    () => filteredProfiles.slice(podiumCount, topCountLimit),
+    [filteredProfiles, podiumCount, topCountLimit]
+  );
 
   return (
     <div className="flex-1 w-full max-w-4xl mx-auto px-4 py-6 pb-36 space-y-6">
@@ -139,7 +156,7 @@ export function LeaderboardView({ onEnterArena }: LeaderboardViewProps) {
                 <motion.div
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="order-2 md:order-1 relative aspect-[3/4] rounded-3xl overflow-hidden border-2 border-slate-300 shadow-xl shadow-slate-200/80 group bg-white"
+                  className="order-2 md:order-1 relative aspect-square rounded-3xl overflow-hidden border-2 border-slate-300 shadow-xl shadow-slate-200/80 group bg-white"
                 >
                   <img
                     src={podiumProfiles[1].photo_url}
@@ -151,7 +168,7 @@ export function LeaderboardView({ onEnterArena }: LeaderboardViewProps) {
                     2
                   </div>
                   <div className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full bg-black/60 border border-white/20 text-white font-mono font-bold text-xs backdrop-blur-md">
-                    {podiumProfiles[1].elo_rating} Elo
+                    {podiumProfiles[1].elo_rating} pts
                   </div>
                   <div className="absolute bottom-0 inset-x-0 p-4 space-y-0.5 pointer-events-none">
                     <h4 className="font-extrabold text-white text-base truncate drop-shadow">{podiumProfiles[1].name}</h4>
@@ -165,7 +182,7 @@ export function LeaderboardView({ onEnterArena }: LeaderboardViewProps) {
                 <motion.div
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="order-1 md:order-2 relative aspect-[3/4] rounded-3xl overflow-hidden border-2 border-amber-400 shadow-2xl shadow-amber-500/25 md:-translate-y-2 group bg-white"
+                  className="order-1 md:order-2 relative aspect-square rounded-3xl overflow-hidden border-2 border-amber-400 shadow-2xl shadow-amber-500/25 md:-translate-y-2 group bg-white"
                 >
                   <img
                     src={podiumProfiles[0].photo_url}
@@ -177,7 +194,7 @@ export function LeaderboardView({ onEnterArena }: LeaderboardViewProps) {
                     <span>👑 1</span>
                   </div>
                   <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-amber-500 text-slate-950 font-mono font-black text-xs shadow">
-                    {podiumProfiles[0].elo_rating} Elo
+                    {podiumProfiles[0].elo_rating} pts
                   </div>
                   <div className="absolute bottom-0 inset-x-0 p-4 space-y-0.5 pointer-events-none">
                     <h4 className="font-black text-white text-lg truncate drop-shadow">{podiumProfiles[0].name}</h4>
@@ -191,7 +208,7 @@ export function LeaderboardView({ onEnterArena }: LeaderboardViewProps) {
                 <motion.div
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="order-3 relative aspect-[3/4] rounded-3xl overflow-hidden border-2 border-amber-700/60 shadow-xl shadow-slate-200/80 group bg-white"
+                  className="order-3 relative aspect-square rounded-3xl overflow-hidden border-2 border-amber-700/60 shadow-xl shadow-slate-200/80 group bg-white"
                 >
                   <img
                     src={podiumProfiles[2].photo_url}
@@ -203,7 +220,7 @@ export function LeaderboardView({ onEnterArena }: LeaderboardViewProps) {
                     3
                   </div>
                   <div className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full bg-black/60 border border-white/20 text-white font-mono font-bold text-xs backdrop-blur-md">
-                    {podiumProfiles[2].elo_rating} Elo
+                    {podiumProfiles[2].elo_rating} pts
                   </div>
                   <div className="absolute bottom-0 inset-x-0 p-4 space-y-0.5 pointer-events-none">
                     <h4 className="font-extrabold text-white text-base truncate drop-shadow">{podiumProfiles[2].name}</h4>
@@ -214,16 +231,16 @@ export function LeaderboardView({ onEnterArena }: LeaderboardViewProps) {
             </div>
           )}
 
-          {/* Ranks 4 to 20 Grid Cards */}
+          {/* Ranks 4+ Grid Cards */}
           {gridProfiles.length > 0 && (
             <div className="space-y-3">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block px-1">
-                Top 20 Contenders
+                Top {Math.min(topCountLimit, filteredProfiles.length)} Contenders
               </span>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {gridProfiles.map((p, idx) => {
-                  const rank = idx + 4;
+                  const rank = idx + podiumCount + 1;
                   const isCurrentUser = currentProfile?.id === p.id;
 
                   return (
@@ -231,7 +248,7 @@ export function LeaderboardView({ onEnterArena }: LeaderboardViewProps) {
                       key={p.id}
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className={`relative aspect-[3/4] rounded-2xl overflow-hidden border shadow-md hover:shadow-xl transition-all group bg-white ${
+                      className={`relative aspect-square rounded-2xl overflow-hidden border shadow-md hover:shadow-xl transition-all group bg-white ${
                         isCurrentUser
                           ? 'border-[#ff5864] ring-2 ring-[#ff5864]/40'
                           : 'border-slate-200'
@@ -251,7 +268,7 @@ export function LeaderboardView({ onEnterArena }: LeaderboardViewProps) {
 
                       {/* Rating */}
                       <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-black/60 text-amber-300 font-mono text-[11px] font-bold border border-white/20 backdrop-blur-md">
-                        {p.elo_rating}
+                        {p.elo_rating} pts
                       </div>
 
                       {/* Name & Dept */}
@@ -285,7 +302,7 @@ export function LeaderboardView({ onEnterArena }: LeaderboardViewProps) {
                     </span>
                   </div>
                   <span className="text-[11px] font-mono text-slate-500">
-                    {currentProfile?.elo_rating} Elo &bull; #{personalStanding.rank} of {personalStanding.total}
+                    {currentProfile?.elo_rating} pts &bull; #{personalStanding.rank} of {personalStanding.total}
                   </span>
                 </div>
               </div>

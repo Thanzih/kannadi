@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { ShieldAlert, Users, Trophy, Activity, RefreshCw, Lock, CheckCircle2 } from 'lucide-react';
+import { ShieldAlert, Users, Trophy, Activity, RefreshCw, Lock, CheckCircle2, Sliders } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import type { Profile } from '../../types';
 import { UserModerationTable } from './UserModerationTable';
-import { VoteStreamView } from './VoteStreamView';
+import { AdminSettingsView } from './AdminSettingsView';
 import { AuditTrailView } from './AuditTrailView';
 
-type AdminTab = 'users' | 'votes' | 'audit';
+type AdminTab = 'users' | 'settings' | 'audit';
 
 export function AdminDashboard() {
   const { profile } = useAuth();
@@ -75,7 +75,7 @@ export function AdminDashboard() {
   // Access Denied Screen if user is not an admin
   if (!profile?.is_admin) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-4 selection:bg-[#ff5864] selection:text-white">
+      <div className="min-h-svh bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-4 selection:bg-[#ff5864] selection:text-white">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -107,7 +107,7 @@ export function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-[#ff5864] selection:text-white">
+    <div className="min-h-svh bg-slate-50 text-slate-900 flex flex-col selection:bg-[#ff5864] selection:text-white">
       <main className="relative z-10 flex-1 max-w-5xl w-full mx-auto px-4 py-8 space-y-8 pb-28">
         {/* Top Admin Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -151,16 +151,16 @@ export function AdminDashboard() {
               <span>Total Votes</span>
             </div>
             <span className="text-2xl font-black text-slate-900 block font-mono">{totalVotes}</span>
-            <span className="text-[10px] text-slate-500 font-medium">Atomic Elo pairs</span>
+            <span className="text-[10px] text-slate-500 font-medium">Head-to-head decisions</span>
           </div>
 
           <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-1">
             <div className="flex items-center space-x-1.5 text-amber-600 text-xs font-bold">
               <Trophy className="w-3.5 h-3.5" />
-              <span>Average Elo</span>
+              <span>Average Score</span>
             </div>
             <span className="text-2xl font-black text-slate-900 block font-mono">{stats.avgElo}</span>
-            <span className="text-[10px] text-slate-500 font-medium">Base is 1200</span>
+            <span className="text-[10px] text-slate-500 font-medium">Baseline is 1200</span>
           </div>
 
           <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-1">
@@ -179,35 +179,38 @@ export function AdminDashboard() {
         <div className="flex items-center space-x-2 border-b border-slate-200 pb-3">
           <button
             onClick={() => setActiveTab('users')}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer flex items-center space-x-1.5 ${
               activeTab === 'users'
                 ? 'bg-gradient-to-r from-[#fd297b] to-[#ff5864] text-white shadow-md shadow-rose-500/20'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            User Moderation ({profiles.length})
+            <Users className="w-3.5 h-3.5" />
+            <span>User Moderation ({profiles.length})</span>
           </button>
 
           <button
-            onClick={() => setActiveTab('votes')}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer ${
-              activeTab === 'votes'
+            onClick={() => setActiveTab('settings')}
+            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer flex items-center space-x-1.5 ${
+              activeTab === 'settings'
                 ? 'bg-gradient-to-r from-[#fd297b] to-[#ff5864] text-white shadow-md shadow-rose-500/20'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            Live Vote Stream
+            <Sliders className="w-3.5 h-3.5" />
+            <span>Platform Settings</span>
           </button>
 
           <button
             onClick={() => setActiveTab('audit')}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer flex items-center space-x-1.5 ${
               activeTab === 'audit'
                 ? 'bg-gradient-to-r from-[#fd297b] to-[#ff5864] text-white shadow-md shadow-rose-500/20'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            Audit Trail
+            <ShieldAlert className="w-3.5 h-3.5" />
+            <span>Audit Trail</span>
           </button>
         </div>
 
@@ -220,7 +223,7 @@ export function AdminDashboard() {
               <UserModerationTable profiles={profiles} onRefresh={fetchAdminData} />
             )}
 
-            {activeTab === 'votes' && <VoteStreamView profiles={profiles} />}
+            {activeTab === 'settings' && <AdminSettingsView />}
 
             {activeTab === 'audit' && <AuditTrailView />}
           </>

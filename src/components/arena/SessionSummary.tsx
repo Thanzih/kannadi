@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { Trophy, RotateCcw, ShieldCheck } from 'lucide-react';
@@ -14,16 +14,21 @@ interface SessionSummaryProps {
 
 export function SessionSummary({ onRestart, onViewLeaderboard, roundsPlayed }: SessionSummaryProps) {
   const { profile, refreshProfile } = useAuth();
+  const hasFiredRef = useRef<boolean>(false);
 
   useEffect(() => {
-    confetti({
-      particleCount: 85,
-      spread: 75,
-      origin: { y: 0.6 },
-      colors: ['#fd297b', '#ff5864', '#ff655b', '#eab308', '#6366f1'],
-    });
+    if (!hasFiredRef.current) {
+      hasFiredRef.current = true;
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#fd297b', '#ff5864', '#ff655b', '#eab308', '#6366f1'],
+        disableForReducedMotion: true,
+      });
 
-    refreshProfile();
+      refreshProfile();
+    }
   }, [refreshProfile]);
 
   return (

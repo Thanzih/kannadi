@@ -19,11 +19,11 @@ export function ProfileView({ onOpenAdmin }: ProfileViewProps) {
 
   return (
     <div className="flex-1 w-full max-w-md mx-auto px-4 py-6 pb-28 space-y-6">
-      {/* Hero Profile Card */}
+      {/* Hero Profile Card (Square) */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative aspect-[3/4] w-full rounded-[28px] overflow-hidden border border-slate-200/90 shadow-xl shadow-slate-200/80 bg-white group"
+        className="relative aspect-square w-full rounded-[28px] overflow-hidden border border-slate-200/90 shadow-xl shadow-slate-200/80 bg-white group"
       >
         <img
           src={profile.photo_url}
@@ -45,7 +45,7 @@ export function ProfileView({ onOpenAdmin }: ProfileViewProps) {
           </span>
 
           <span className="px-3 py-1 rounded-full bg-black/60 border border-white/20 text-white font-mono font-bold text-xs backdrop-blur-md shadow-md">
-            {profile.elo_rating} Elo
+            {profile.elo_rating} pts
           </span>
         </div>
 
@@ -62,12 +62,6 @@ export function ProfileView({ onOpenAdmin }: ProfileViewProps) {
 
           <div className="flex items-center space-x-2 text-xs text-slate-200 font-medium drop-shadow">
             <span>{profile.department || 'General Department'}</span>
-            {profile.gender && (
-              <>
-                <span>&bull;</span>
-                <span className="capitalize">{profile.gender}</span>
-              </>
-            )}
           </div>
         </div>
       </motion.div>
@@ -79,7 +73,7 @@ export function ProfileView({ onOpenAdmin }: ProfileViewProps) {
             <Trophy className="w-3.5 h-3.5" />
           </div>
           <span className="block text-base font-black text-slate-900 font-mono">{profile.elo_rating}</span>
-          <span className="text-[10px] text-slate-500 uppercase font-bold">Elo</span>
+          <span className="text-[10px] text-slate-500 uppercase font-bold">Score</span>
         </div>
 
         <div className="p-3 rounded-2xl bg-white border border-slate-200 shadow-sm">
